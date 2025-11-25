@@ -5,10 +5,7 @@ import json
 import requests # Necesario para hacer llamadas a la API REST de Supabase
 from flask import Flask, request, redirect, url_for, render_template
 
-# --- NOTA IMPORTANTE PARA RAILWAY ---
-# Usamos una simulación de DB simple (from replit import db) por ahora.
-# En un proyecto real, se reemplazaría por una base de datos PostgreSQL.
-from replit import db 
+
 
 # --- CONFIGURACIÓN DE LA APLICACIÓN ---
 app = Flask(__name__)
