@@ -6,16 +6,23 @@ import requests # Necesario para hacer llamadas a la API REST de Supabase
 from flask import Flask, request, redirect, url_for, render_template
 
 
-
 # --- CONFIGURACIÓN DE LA APLICACIÓN ---
 app = Flask(__name__)
 
 # Clave de la "tabla" de simulación de DB
 DB_KEY = "user_sessions" 
 
-# Obtener variables de entorno configuradas en Railway para Supabase
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
+# Inicialización de Supabase
+# Se recomienda usar os.environ.get para garantizar que se lean las variables de Render
+# NOTA: Los nombres de las variables deben coincidir exactamente con los que pusiste en Render.
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+
+if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+    print("FATAL: SUPABASE_URL o SUPABASE_ANON_KEY no están configuradas en el entorno.")
+    exit(1) # Forzar la salida si falta una variable, para que el log muestre el error.
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 # Nombre del bucket de almacenamiento que creaste en Supabase (debe ser 'files')
 STORAGE_BUCKET_NAME = "files" 
 
