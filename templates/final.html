@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Subida Completada!</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        /* Animación para el icono de éxito */
+        .success-icon {
+            color: #10B981; /* Verde esmeralda */
+            animation: bounce-in 0.8s ease-out;
+        }
+        @keyframes bounce-in {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        .google-button {
+            background-color: #1a73e8;
+            transition: background-color 0.3s;
+        }
+        .google-button:hover {
+            background-color: #176bd9;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-sm bg-white p-10 rounded-xl shadow-2xl border border-gray-100 text-center">
+        
+        <!-- Ícono de chequeo (Estilo SVG) -->
+        <svg class="success-icon mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        
+        <h1 class="text-3xl font-bold text-gray-800 mt-4 mb-2">¡Subida Exitosa!</h1>
+        <p class="text-gray-500 mb-8">El archivo ha sido almacenado de forma segura en tu **Bucket de Supabase** y la URL ha sido registrada.</p>
+        
+        <div class="space-y-4">
+            <!-- Botón para ir al Dashboard de resultados -->
+            <a href="/view_data" 
+               class="google-button text-white w-full block py-3 rounded-lg font-semibold shadow-md focus:outline-none focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.01] transition duration-200">
+                Ver Dashboard de Datos Capturados
+            </a>
+            
+            <!-- Enlace para volver a empezar -->
+            <a href="/" 
+               class="text-sm font-medium text-gray-500 hover:text-gray-700 block py-2 transition duration-150">
+                Reiniciar Proceso
+            </a>
+        </div>
+    </div>
+</body>
+</html>
