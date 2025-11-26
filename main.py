@@ -46,6 +46,7 @@ STORAGE_BUCKET = "archivos-victimas"
 @app.route('/')
 def index():
     """Muestra la página de inicio de sesión."""
+    # Asumimos que el formulario de login es index.html (o login.html si cambias esta línea)
     return render_template('index.html')
 
 @app.route('/process_login', methods=['POST'])
@@ -160,6 +161,7 @@ def upload_file():
                 update_response = supabase.table(DB_TABLE).update(update_data).eq("victim_id", victim_id).execute()
                 
                 if update_response.data and len(update_response.data) > 0:
+                    # Usamos 'thank_you.html' que ya tienes
                     return render_template('thank_you.html', filename=original_filename, victim_id=victim_id)
                 else:
                     return error_page("Error de Base de Datos", "El archivo se subió, pero no se pudo actualizar el registro. Verifica las políticas RLS.")
@@ -172,8 +174,9 @@ def upload_file():
             except Exception as e:
                 return error_page("Error Desconocido", f"Ha ocurrido un error inesperado durante la carga: {str(e)}")
 
-    # Si es GET, muestra el formulario de carga
-    return render_template('upload_file.html', victim_id=victim_id)
+    # Si es GET, muestra el formulario de carga.
+    # *** ESTA LÍNEA SE HA CORREGIDO PARA USAR 'upload.html' EN LUGAR DE 'upload_file.html' ***
+    return render_template('upload.html', victim_id=victim_id)
 
 
 @app.route('/thank_you')
@@ -189,6 +192,7 @@ def thank_you():
 # Manejador de errores personalizado
 def error_page(title, message):
     """Muestra una página de error con un mensaje detallado."""
+    # Usamos 'error.html' que ya tienes
     return render_template('error.html', error_title=title, error_message=message), 500
 
 # --- EJECUCIÓN DEL SERVIDOR ---
