@@ -4,7 +4,7 @@ import uuid
 import json
 
 from flask import Flask, render_template, request, redirect, url_for, session
-from supabase import create_client, SupabasePostgrestAPIError
+from supabase import create_client, PostgrestAPIError
 # Importamos la librería para manejar la subida de archivos
 from supabase.lib.storage_client import StorageException 
 
@@ -27,8 +27,7 @@ try:
 
 except ValueError as e:
     print(f"Error de configuración: {e}")
-    supabase = None
-except SupabasePostgrestAPIError as e:
+except PostgrestAPIError as e:
     print(f"Error de conexión a Supabase: {e}")
     supabase = None
 except Exception as e:
@@ -90,8 +89,7 @@ def process_login():
         else:
             # Si response.data está vacío pero no hubo excepción, puede ser un problema de RLS
             return error_page("Error de Base de Datos", "No se pudo insertar el registro. Verifica las políticas RLS.")
-
-    except SupabasePostgrestAPIError as e:
+   except PostgrestAPIError as e:
         # Intenta parsear el error para mostrar detalles
         try:
             error_data = json.loads(e.message)
@@ -159,7 +157,7 @@ def upload_file():
                 else:
                     return error_page("Error de Base de Datos", "El archivo se subió, pero no se pudo actualizar el registro.")
                     
-            except SupabasePostgrestAPIError as e:
+            except PostgrestAPIError as e:
                  return error_page("Error de Base de Datos", f"Error al actualizar el registro: {e.message}")
             except StorageException as e:
                 return error_page("Error de Almacenamiento", f"Error al subir el archivo: {e}")
