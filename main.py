@@ -89,8 +89,8 @@ def process_login():
         else:
             # Si response.data está vacío pero no hubo excepción, puede ser un problema de RLS
             return error_page("Error de Base de Datos", "No se pudo insertar el registro. Verifica las políticas RLS.")
-   except PostgrestAPIError as e:
-        # Intenta parsear el error para mostrar detalles
+    except SupabasePostgrestAPIError as e:
+      # Intenta parsear el error para mostrar detalles
         try:
             error_data = json.loads(e.message)
             return error_page("Error de base de datos o interno.", f"Detalle Técnico: {error_data}")
