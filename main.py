@@ -3,8 +3,9 @@ import os
 import uuid
 import time
 import sys
-from flask import Flask, render_template, request, redirect, url_for, session, g
-from supabase import create_client, Client, SupabaseClient, SupabasePostgrestAPIError
+from flask import Flask, render_template, request, redirect, url_for, session
+# Eliminamos SupabaseClient de aquí, ya que no se usa y causa el ImportError.
+from supabase import create_client, Client, SupabasePostgrestAPIError 
 
 # ======================================================================
 # CONFIGURACIÓN INICIAL DE FLASK Y SUPABASE
@@ -15,7 +16,7 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback_secret_key_very_se
 
 # Variables de entorno para Supabase (usamos SUPABASE_ANON_KEY)
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
 supabase = None
 
@@ -34,7 +35,7 @@ try:
 except ValueError as ve:
     # Captura si faltan las variables de entorno y lo imprime en los logs de error
     print(f"ERROR FATAL: Error de configuración de entorno: {ve}", file=sys.stderr)
-    # No detenemos el programa aquí, pero la variable 'supabase' será None.
+    # Si las variables faltan, 'supabase' es None, lo cual manejamos en las rutas.
 except Exception as e:
     # Captura cualquier otro error de inicialización
     print(f"ERROR FATAL: Error al inicializar Supabase: {e}", file=sys.stderr)
@@ -51,7 +52,7 @@ def index():
     # Comprobación de que la conexión a Supabase se haya realizado correctamente
     if supabase is None:
         # Si la conexión falló al inicio, mostramos un error 500
-        return render_template('error.html', error_message="Error de conexión al servidor de la base de datos (Verifique logs de Render)."), 500
+        return render_template('error.html', error_message="Error de conexión al servidor de la base de datos (Verifique logs de Render para detalles)."), 500
         
     # Si la sesión ya tiene un victim_id, redirigir a la página de subida
     if 'victim_id' in session:
