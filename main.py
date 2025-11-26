@@ -16,7 +16,7 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback_secret_key_very_se
 
 # Variables de entorno para Supabase (usamos SUPABASE_ANON_KEY)
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
 supabase = None
 
