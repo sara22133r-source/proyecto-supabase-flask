@@ -5,7 +5,7 @@ import time
 import sys
 from flask import Flask, render_template, request, redirect, url_for, session
 # Eliminamos SupabaseClient de aquí, ya que no se usa y causa el ImportError.
-from supabase import create_client, Client, SupabasePostgrestAPIError 
+from supabase import create_client, Client, SupabasePostgrestAPIError
 
 # ======================================================================
 # CONFIGURACIÓN INICIAL DE FLASK Y SUPABASE
